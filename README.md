@@ -5,6 +5,14 @@
 
 ---
 
+## 效果预览
+
+| 内置「幻夜幽紫」毛玻璃预设 | 自定义本地 4K 壁纸（支持任意本地图片） |
+| :---: | :---: |
+| ![内置渐变预设预览](docs/assets/preview-preset.jpg) | ![自定义本地壁纸预览](docs/assets/preview-custom-wallpaper.jpg) |
+
+---
+
 ## 核心特性
 
 ### 1. 自定义壁纸与毛玻璃主题工坊（原创 · 零 Bug · 120fps）
