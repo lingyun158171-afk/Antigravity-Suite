@@ -684,10 +684,69 @@ def cmd_setup_shortcut(app_dir: Path, custom_lnk: str | None = None) -> int:
     return 0
 
 
+def cmd_menu(app_dir: Path) -> int:
+    if os.name == "nt":
+        try:
+            os.system("chcp 65001 >nul")
+        except Exception:
+            pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+    while True:
+        if os.name == "nt":
+            os.system("cls")
+        print("=" * 60)
+        print("  Antigravity Suite (汉化 + 推理滑条 + 额度条 + 自定义壁纸)")
+        print("=" * 60)
+        print("  [1] 重新装入全部 4 项增强并启动 Antigravity")
+        print("  [2] 智能启动 Antigravity（官方更新后自动重装）")
+        print("  [3] 查看当前安装状态")
+        print("  [4] 还原当前版本官方原版 Antigravity")
+        print("  [5] 更新上游汉化与额度条源码（保留本地 120fps 增强）")
+        print("  [6] 打开我的自定义壁纸文件夹 (wallpapers)")
+        print("  [7] 修复/重建桌面快捷方式")
+        print("  [0] 退出")
+        print("=" * 60)
+        try:
+            choice = input("请选择 [0-7]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            return 0
+
+        if choice == "0":
+            return 0
+        elif choice == "1":
+            cmd_patch(app_dir, launch_after=True)
+            input("\n按回车键返回菜单...")
+        elif choice == "2":
+            return cmd_launch(app_dir)
+        elif choice == "3":
+            cmd_status(app_dir)
+            input("\n按回车键返回菜单...")
+        elif choice == "4":
+            cmd_restore(app_dir)
+            input("\n按回车键返回菜单...")
+        elif choice == "5":
+            cmd_update_mods()
+            input("\n按回车键返回菜单...")
+        elif choice == "6":
+            wp_dir = SUITE_DIR / "wallpapers"
+            wp_dir.mkdir(parents=True, exist_ok=True)
+            if os.name == "nt":
+                subprocess.Popen(["explorer", str(wp_dir)])
+        elif choice == "7":
+            cmd_setup_shortcut(app_dir)
+            input("\n按回车键返回菜单...")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Antigravity 增强套件统一管理与智能启动器")
     parser.add_argument("command", nargs="?", default="status",
-                        choices=["launch", "patch", "restore", "status", "update-mods", "setup-shortcut"])
+                        choices=["launch", "patch", "restore", "status", "update-mods", "setup-shortcut", "menu"])
     parser.add_argument("--app-dir", default=None, help="自定义 Antigravity 安装目录（默认 %%LOCALAPPDATA%%\\Programs\\antigravity）")
     parser.add_argument("--launch", action="store_true", help="执行完 patch / restore 后自动启动 Antigravity")
     parser.add_argument("--from-launcher", action="store_true", help="由静默 VBS 启动器调用")
@@ -711,6 +770,8 @@ def main() -> int:
         rc = cmd_update_mods()
     elif args.command == "setup-shortcut":
         rc = cmd_setup_shortcut(app_dir, custom_lnk=args.shortcut_path)
+    elif args.command == "menu":
+        rc = cmd_menu(app_dir)
 
     if args.pause_on_error:
         if rc != 0:
