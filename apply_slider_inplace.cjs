@@ -103,7 +103,12 @@ function main() {
   const clientCode = fs.readFileSync(CLIENT_JS, "utf8");
   const hasWallpaperFiles = fs.existsSync(WALLPAPER_JS) && fs.existsSync(WALLPAPER_MAIN_IPC);
   const wallpaperCode = hasWallpaperFiles ? fs.readFileSync(WALLPAPER_JS, "utf8") : "";
-  const wallpaperIpcCode = hasWallpaperFiles ? fs.readFileSync(WALLPAPER_MAIN_IPC, "utf8") : "";
+  const wallpaperDir = path.join(SUITE_DIR, "wallpapers");
+  const wallpaperIpcCode = hasWallpaperFiles
+    ? fs
+        .readFileSync(WALLPAPER_MAIN_IPC, "utf8")
+        .replace('"__AGY_SUITE_WALLPAPER_DIR__"', JSON.stringify(wallpaperDir))
+    : "";
 
   const rawAsar = fs.readFileSync(asarPath);
   const { header, payload } = parseAsarArchive(rawAsar);

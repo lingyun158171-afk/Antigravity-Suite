@@ -11,14 +11,17 @@
     const { ipcMain, dialog, shell, BrowserWindow } = electron || {};
     if (!ipcMain || typeof ipcMain.handle !== "function") return;
 
-    const WALLPAPER_DIR = path.join(
+    const DEFAULT_WALLPAPER_DIR = path.join(
       os.homedir(),
       ".gemini",
       "antigravity",
-      "scratch",
-      "agy-suite",
       "wallpapers"
     );
+    const INJECTED_WALLPAPER_DIR = "__AGY_SUITE_WALLPAPER_DIR__";
+    const WALLPAPER_DIR =
+      INJECTED_WALLPAPER_DIR && INJECTED_WALLPAPER_DIR !== "__AGY_SUITE_" + "WALLPAPER_DIR__"
+        ? INJECTED_WALLPAPER_DIR
+        : DEFAULT_WALLPAPER_DIR;
     const CONFIG_PATH = path.join(WALLPAPER_DIR, "config.json");
     const MIME_MAP = {
       ".png": "image/png",

@@ -6,11 +6,8 @@ Set sh = CreateObject("WScript.Shell")
 suiteDir = fso.GetParentFolderName(WScript.ScriptFullName)
 scriptPath = fso.BuildPath(suiteDir, "agy_suite.py")
 
-' Prefer pythonw.exe (no console flash), fallback to python.exe
-pyExe = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%\Programs\Python\Python314\pythonw.exe")
-If Not fso.FileExists(pyExe) Then
-    pyExe = "pythonw.exe"
-End If
+' Prefer pythonw.exe in PATH (no console flash), fallback to python.exe
+pyExe = "pythonw.exe"
 
 argStr = ""
 For i = 0 To WScript.Arguments.Count - 1

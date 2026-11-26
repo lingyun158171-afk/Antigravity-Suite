@@ -4,6 +4,21 @@ setlocal
 set "SUITE_DIR=%~dp0"
 set "PY_SCRIPT=%SUITE_DIR%agy_suite.py"
 
+where python >nul 2>nul
+if errorlevel 1 (
+    echo [错误] 未检测到 Python，请先安装 Python 3.10+ 并勾选 "Add Python to PATH"：
+    echo        https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
+where node >nul 2>nul
+if errorlevel 1 (
+    echo [错误] 未检测到 Node.js，请先安装 Node.js 18+：
+    echo        https://nodejs.org/
+    pause
+    exit /b 1
+)
+
 :menu
 cls
 echo ============================================================
