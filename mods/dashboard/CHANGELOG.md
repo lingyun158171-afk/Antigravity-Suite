@@ -1,0 +1,373 @@
+# Changelog
+
+## 0.9.10 — 2026-11-20
+
+- Show conversation compaction counts (`🗜`) in the inline context card, native sidecar panel, and chip/tab tooltips when `transcriptStats.compactionMarkers > 0`, localized across English, Simplified Chinese, and Traditional Chinese (#4, #7).
+- Add `>= 75%` warning and `>= 90%` danger colors for the inline context ring and context progress bar against host-reported `maxContextTokens`, fix `localize()` so it skips dynamic `[data-card]` chip titles during polling, and dispose `speedStyle` on sidecar `pagehide` (#4, #7).
+- Support Windows proxy shortcuts targeting `AntigravityLauncher.exe` (such as `yuaotian/antigravity-proxy`'s `Antigravity (代理).lnk`, `Antigravity (Proxy).lnk`, and `Antigravity (Прокси).lnk`) in both `compat/launch-config.mjs` and `compat/launch_config.py`, while continuing to exclude IDE shortcuts (#3, #6).
+
+## 0.9.9 — 2026-11-20
+
+- Eliminate redundant idle Windows `powershell.exe` / WMI process rescans across both the Desktop App (`AntigravityClient`) and standalone IDE (`IdeClient`): after the 15s discovery lease expires, verify the cached server's PID liveness (`isProcessAlive`) and loopback port reachability (`probeLoopbackPort`) first and renew the lease directly, only running a full process scan if the backend exited, closed its port, rejected credentials, or a forced refresh was requested.
+- Sanitize process-discovery command timeouts, failures, and malformed JSON (`discoveryCommandError`) across Windows and macOS so raw `Command failed: powershell.exe ...` command lines are never leaked to the UI, and apply the same error-whitelist fallback in Simplified Chinese (`zh-CN`) as in English and Traditional Chinese (`compat/i18n.cjs`).
+- Deduplicate connection/quota errors in the inline context card (`compat/inline-widget.cjs`): render global errors once in a dedicated `#quota-error` notice below the quota windows instead of repeating them inside both the 5-hour and weekly quota sections.
+
+## 0.9.8 — 2026-11-19
+
+- Completely remove the Neon (氖龙) plush mascot Easter egg code, embedded WebP assets, and toggles from the standard release (`antigrative-dashboard-0.9.8.zip` and `antigrative-dashboard-ide-0.9.8.vsix`), keeping default downloads and in-app updates clean and lightweight while preserving all v0.9.6 macOS launcher ergonomics and v0.9.5 memory/backfill optimizations. Users who want the Neon Easter Egg can continue using the dedicated `v0.9.7` release.
+
+## 0.9.7 — 2026-11-19
+
+- Add the **Neon (氖龙) interactive plush mascot Easter egg** in `compat/inline-widget.cjs`: when switching to a Neon model (e.g. `Orchestrator (Neon)`, `Gemini 4 Neon`), a compact baked two-frame WebP plushie (`~10.8 KB` total, zero external network assets) peeks out from the top-right border of the composer card inside an isolated Shadow DOM stage with zero host style mutations.
+- Support tactile micro-interactions without interfering with chat controls: custom frosted `✦ 氖龙` hover speech bubble (replacing native tooltips), press-and-rub **headpat squish & damped spring jelly wobble**, quick-click toggle between sitting out and tucked-in peeking (persisted in `localStorage`), proximity curiosity head-tilt, rhythmic typing companion micro-nods, natural idle blinking, and dark-mode neon violet rim lighting.
+- Keep scrolling and host UI unobstructed: ignore normal scrolling chat links/buttons inside message scrollers while still automatically hiding for genuine floating/fixed overlays, narrow cards (`< 320px`), subagent panes, or open Usage Dashboard modals, and cleanly tear down on `park()` / `dispose()`.
+
+## 0.9.6 — 2026-11-19
+
+- Add managed macOS launcher wrapper support for **Antigravity Desktop 2.33.0+**: `manage.py install` and the active sidecar runtime now create and self-heal `~/Applications/Antigravity (Dashboard).app` (preserving the signed `/Applications/Antigravity.app` bundle untouched, copying its icon, setting `LSUIElement`, and prompting to quit & relaunch if Antigravity is already running without remote debugging) so macOS users can launch from Spotlight or Dock without running terminal commands; `uninstall` and `--panel-only` cleanly remove only dashboard-managed wrappers.
+- Enhance `manage.py launch` (and add a standalone installed helper at `~/.gemini/config/plugins/antigravity-pulse/compat/launch_config.py launch`): detect running macOS instances without an active `DevToolsActivePort` to avoid silent single-instance no-ops, add `--restart` to gracefully quit via AppleScript before relaunching, prefer `/usr/bin/open -a` for `.app` bundles, and automatically reuse saved `appResources` / `profile` settings in `launch` and `status`.
+
+## 0.9.5 — 2026-11-18
+
+- Switch historical Token usage backfill (`DesktopUsage` / `TrajectoryReader.readUsage`) to a metadata-only RPC channel (`GetCascadeTrajectoryGeneratorMetadata` with `includeMessages: false`), avoiding full `GetCascadeTrajectorySteps` (`verbosity: 3`) deserialization into host `language_server` memory and keeping foreground 8 MiB caches untouched (reading only bounded `[minStep..maxStep]` step slices on demand when `chatStartMetadata.createdAt` is absent). Skip unlisted orphan `brain/<id>` directories, mark settled (`>= 60s`) 0-request `.db` conversations as `complete` instead of retrying, pace slices (`1500ms` budget, up to `8` candidates/slice, `80ms` inter-item pause, `1200ms` continuation delay), and coalesce/throttle `UsageLedger.summary()` JSON scans during active sync.
+- Reduce idle and startup memory footprint across the App sidecar and standalone IDE: cap collector main-process V8 old-space heap (`--max-old-space-size=192` in `sidecars/panel/sidecar.json` and `ide/extension.cjs`), share `GetAllCascadeTrajectories` summary caches between `Store` and `TrajectoryReader` with adaptive settled TTLs (`12s–15s` idle vs `1.8s` active) rather than re-fetching full trajectory lists every `2.2s` poll, renew healthy HTTP 200 discovery leases without `15s` `ps`/`lsof` respawns, bound `language_server.log` discovery reads to `256 KiB` backward tail chunks (`readLogTail`), and extract bundled SDK files via `2 MiB` chunked binary scans (`extractBundledSdkFromFile`) instead of reading full 150–200 MB host binaries into memory.
+
+## 0.9.4 — 2026-11-18
+
+- Harden `sidecars/panel/tests/ui-browser.test.mjs` against parallel Windows CI timeouts and orphan-browser hangs: guarantee headless Chromium/Edge child-process and `stderr` pipe cleanup when `launchBrowser` fails, raise the test `CdpConnection` timeout (`5s` → `30s`), relax 16-model stress render wait (`8s` → `20s`), and measure optimistic scope-switch latency in-page (`performance.now()`) rather than Node↔Edge WebSocket IPC wall time.
+- Retain all **v0.9.2** Antigravity Desktop **2.33.0+** launch entry-point configuration, self-healing, `manage.py launch`, and `debug-port-disabled` diagnostics unchanged, and leave the `v0.9.2` and `v0.9.3` Git tags intact.
+
+## 0.9.3 — 2026-11-18
+
+- Stabilize Windows CI and Release verification gates on saturated `windows-latest` runners so the Antigravity Desktop **2.33.0+** adaptation publishes cleanly: replace the 30ms fixed sleep after `ingestLive` in `usage.test.mjs` with deterministic write-queue draining, raise the parallel-suite per-test timeout in `delegated-usage.test.mjs` (`5s` → `30s`, `bounded` `2s` → `10s`), and pre-warm cold-VM PowerShell `NetTCPIP` CIM providers in `tools/check-windows-discovery.mjs` while keeping production `8s` runtime discovery timeouts unchanged.
+- Retain all **v0.9.2** Antigravity Desktop **2.33.0+** launch entry-point configuration, self-healing, `manage.py launch`, and `debug-port-disabled` diagnostics unchanged, and leave the `v0.9.2` Git tag intact.
+
+## 0.9.2 — 2026-11-18
+
+- Adapt Antigravity Desktop **2.33.0+**, where Electron no longer opens `--remote-debugging-port` by default and clears `DevToolsActivePort` unless launched with `--remote-debugging-port`.
+- Automatically configure user-owned Antigravity Desktop launch entry points (`--remote-debugging-port=0 --remote-debugging-address=127.0.0.1` on Windows `.lnk` shortcuts and Linux `~/.local/share/applications/antigravity.desktop`) during `manage.py install` without modifying `resources/app.asar`, and cleanly roll back dashboard-managed flags on `uninstall` or `--panel-only`.
+- Add `python[3] manage.py launch` across Windows, Linux and macOS to launch Antigravity Desktop with the required loopback CDP flags, and self-heal overwritten launch entry points from the active sidecar runtime (including after host auto-updates or in-app plugin updates).
+- Surface structured `debug-port-disabled` diagnostics (`reason`, `hostVersion`, `launchConfigured`) in `integration-state.json`, `manage.py status`, and localized English / Simplified Chinese / Traditional Chinese side-panel notices.
+
+## 0.9.1 — 2026-11-17
+
+- Move the project's maintenance, release downloads and App update checks to `ATtacK030130/antigrative-dashboard`, while preserving the IDE extension identity (`you-should-know-me.antigrative-dashboard-ide`) and existing user data directories. Existing installations through `v0.8.20` should be updated manually once from the new repository; later App update checks use `ATtacK030130/antigrative-dashboard`.
+- Add switchable **Pixel cat** (`cat`) and **Minimal** (`minimal`) speed card styles (`speedStyle` preference), featuring an animated stride-synced speed trail, peak speed readout and localized toggle across English, Simplified Chinese and Traditional Chinese.
+- Add quota pace outlook badges (`Comfortable` / `Tight` / `Runs out early`), hatched linear depletion forecasts on five-hour and weekly quota bars, and active quota-window observed token volumes with proportional full-window reference estimates.
+- Add `All local` / `Current account` scope switching (`usageScope` preference) in Token usage across desktop App and standalone IDE, aggregating across local accounts and unauthenticated sessions in `usage-v1`, alongside decoupled per-conversation persistence (`history-v1/conversations/<id>.json` with fallback).
+- Synchronize inline widget, sidecar panel and IDE typography with Antigravity Appearance font settings (`--pulse-font`, `--pulse-font-mono`) via live host CSS variables and sanitized `config.json` fallbacks, invalidating density probes on font changes.
+- Verify against Antigravity desktop App **2.32.2** host resources and embedded SDK, plus end-to-end Chromium CDP UI regressions (`ui-browser.test.mjs`) and Node/IDE/Python test suites.
+
+## 0.8.20 — 2026-11-02
+
+- Fix missing dashboard controls in standalone Antigravity IDE 2.6.0: discover the native Agent Webview and its cross-process conversation frame before mounting the shared widget. Keep the legacy workbench adapter for IDE 2.5.5.
+- Identify the new IDE-owned `agy --hub` HTTP port from its explicit flag and the selected process's live listeners. Ignore stale legacy log ports for the hub while preserving legacy discovery and Windows TUN fallback.
+- Restrict the nested bridge to the validated Agent pane, official wrapper and exact child frame; revoke access on navigation or teardown and discard late responses. Do not expose credentials or conversation text.
+- Cover Webview identity, unrelated extensions, frame replacement, request cancellation, IDE port ownership, legacy layouts, and package contents in automated tests. The user verified a real IDE 2.6.0 conversation on Windows; Linux/macOS signed-in IDE GUI verification remains outstanding.
+
+## 0.8.19 — 2026-11-02
+
+- Fix extra warning and collection-progress icons appearing when an auxiliary pane narrows the composer. Correct the Shadow DOM state selectors and remove the compact rule that forced hidden SVGs to display; each control keeps one visible glyph in normal, empty, limited and processing states.
+- Keep the compact cache icon centered in its 24px button and inset its keyboard focus outline to avoid clipping. Existing popup positioning stays anchored to the correct button.
+- Add 48 browser geometry/state cases across English, Simplified/Traditional Chinese, dark/light themes and compact/full transitions, including popup anchoring and animation-copy cleanup. The regression reproduces against the v0.8.18 widget; it predates the Argon changes.
+
+## 0.8.18 — 2026-11-01
+
+- Add dedicated Argon weekly-quota presentation across App, IDE and CLI using the returned `gemini-argon-wtu-weekly` bucket. Weekly-only groups omit the five-hour panel; zero remains exhausted. Accounts without a dedicated Argon group retain the returned shared Gemini group and its original label/windows.
+- Keep all three known CLI quota families visible when Argon is returned. Preserve quota colors, terminal bounds and the existing cache calculation; add `--preview-argon` for a synthetic contract preview.
+- Parse both flat and nested remaining-quota values without treating missing/null values as zero, preserve flat-list bucket families, and use the host's `forceRefresh` request field only for explicit quota refreshes.
+
+- Adapt [PR #28](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/pull/28) by HumanMus1c: support explicit blank Windows socket states only after validating ownership/address fields and confirming the expected loopback target accepts a TCP connection. Missing state fields stay rejected; probes carry no payload, cover at most four targets, and share a 1.5-second budget.
+- Use shared quota presentation rules in the App, IDE and side panel to distinguish Gemini (Argon), including opaque bucket IDs. Keep manual selections; missing model-specific quota stays unavailable. Refresh option labels when host names change without changing IDs.
+- Show the installed plugin version in the side-panel header from its manifest. Invalid manifests omit the badge; narrow panels hide it while retaining the version in the title tooltip. A manifest-only version change invalidates panel asset URLs.
+- Add real loopback positive/negative discovery checks, IDE ownership regressions, behavioral quota tests and browser checks for model switching, missing groups, renamed groups, manual selection, header sizing and themes.
+
+## 0.8.17 — 2026-11-01
+
+- Fix [#27](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/27): reject Windows TUN fake-IP `LISTENING` rows and recover PID-owned local listeners reported with nonstandard `State: 0`. Revalidate local/remote addresses, ports and state; do not accept `Bound`, `Closed`, unrelated processes or log-only credentials.
+- Share bounded Windows socket discovery between the App and IDE. Supplement a missing current HTTP/CDP port even when another listener or a reused historical port exists. Preserve native fast-path discovery, one batched fallback, timeout/output limits, concurrent-request coalescing and retry backoff.
+- When default App log locations coexist, prefer the most recently modified readable log for port hints; a stale profile log no longer masks a newer native log. Explicit log overrides remain authoritative and all ports still require live PID ownership.
+- Add synthetic TUN, partial socket-table, ownership and reconnect regressions. Verify native Windows netstat/CIM discovery in a separate CI/release step with unchanged production timeouts.
+
+## 0.8.16 — 2026-10-31
+
+- Fix [#26](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/26): support Antigravity IDE 2.6.0's `agy --hub` backend while retaining the 2.5.5 language-server path. Renderer attachment no longer waits for metrics discovery, so temporary backend failures keep the composer controls mounted and return offline metrics.
+- Bound process lineage and renderer-port ownership checks, reject ordinary `agy`, LSP and ambiguous multi-instance matches, and add Windows/POSIX discovery and mount regressions.
+
+## 0.8.15 — 2026-10-30
+
+- Automatically complete selected oversized conversations in a bounded disk-backed worker, retain foreground responsiveness, and publish verified statistics on the normal poll. Stream individual projected records, preserve exact deduplication/rate rules, and merge large usage ledgers off the foreground thread.
+
+- Distinguish collection-budget failures from empty conversations (Issue #25), retain and label last complete statistics, and expose bounded diagnostics on demand. Add budget-failure retry backoff without stopping account quota refresh.
+
+## 0.8.14 — 2026-10-30
+
+- Fix [#24](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/24): resolve a sidebar subagent from its local conversation area and composer instead of falling back to the main page's conversation. Focus changes refresh the selected agent promptly; unavailable or ambiguous local identities do not borrow the parent's statistics.
+- Keep inline requests with unresolved conversation identity quota-only, avoiding unnecessary reads of the latest conversation. Standalone panel selection and account-wide quotas retain their existing behavior.
+
+## 0.8.13 — 2026-10-30
+
+- Fix [#23](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/23): support relocated user directories such as a Windows `.gemini` junction, including the physical module path supplied by Node. Bind install and recovery operations to validated physical directories while continuing to reject linked plugin roots and runtime entries.
+- Distinguish local installation-path failures from package verification in English, Simplified Chinese and Traditional Chinese. Expired update plans request a fresh check, and an uncertain worker result no longer claims the previous version was retained.
+- Keep update backups outside the installed runtime when an older sidecar stores its data there, preventing recursive self-copy. Preserve private records and reject transaction/backup overlap or changed directory identities.
+- Add real process upgrade regressions for logical junction paths, physical paths and legacy runtime-local data to the cross-platform update gate.
+- Refresh the official desktop resource check to Antigravity 2.28.2. This does not establish signed-in GUI acceptance for all platforms or reproduce the separate report of a missing widget.
+- Existing updaters that reject a junction before downloading need a one-time manual install of this release. Keep the junction, settings and statistics, then fully restart the App.
+
+## 0.8.12 — 2026-10-29
+
+- Fix [#22](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/22): consume a stable, bounded history-import queue across slices so deleted, temporarily unlisted or evicted candidates cannot cause an endless 250 ms continuation loop. Retain failed imports for retry and preserve saved usage.
+- Apply the explicit `usageSync` gate to standalone IDE metrics as well as App metrics. Normal polling, card refreshes and expired-quota refreshes do not request historical backfill.
+- Use a synchronous cached ownership boolean in collection guards, with asynchronous verification at runtime boundaries. Stop accepting old collector results after detected takeover, and remove settings-file reads from per-page ownership checks.
+- Bound checkpoint persistence and save it once per slice instead of rewriting the full journal after every conversation. Retain an oversized legacy checkpoint for recovery while rebuilding bounded metadata; usage records remain intact.
+- Cancel queued statistics/history writes when their owning collector or account is superseded, retain unsigned-history retry counts across restarts, and prevent a concurrent import from caching stale totals under a newer ledger revision.
+- Request historical synchronization only when **View token usage** is opened or its top-right **Refresh usage** action is clicked. A full import consumes a finite candidate snapshot; new top-level conversations wait for the next pass, and resource limits retain partial coverage rather than implying completeness.
+- Preserve settings, recorded usage and per-conversation statistics during App/IDE upgrades. Retain oversized legacy checkpoint metadata as a recovery file while rebuilding bounded checkpoints; no usage ledger is deleted.
+
+## 0.8.11 — 2026-10-29
+
+- Bound historical usage imports: normal refresh processes at most 25 prioritized conversations and reports partial coverage instead of scanning a 1000+ history library continuously.
+- Keep full historical import behind an explicit refresh, with bounded slices, a 15-second pass budget, resumable continuation, capped maps and a 30-second local discovery cache.
+- Apply persistent exponential retry backoff to every candidate, including delegated IDs without a local signature. Repeated trajectory pages and excessive page counts stop immediately.
+- Keep the current conversation and recent running conversations responsive while historical import runs in the background. Existing ledgers and settings remain unchanged.
+- Publish App/CLI ZIP, standalone IDE VSIX and SHA-256 files for the normal v0.8.11 update path.
+
+## 0.8.10 — 2026-10-28
+
+- Promote the accepted v0.8.9 widget-lifecycle and updater fixes to a normal versioned release so App users can discover it through Check for updates.
+- Prevent disposed widgets from remounting after delayed preference/layout callbacks; remove identifiable orphan strips while preserving native controls and saved data.
+- Include Windows stable-directory update transactions, Python discovery and network/error handling from the previous patch. Existing updaters that already fail installation can still require a one-time manual repair.
+- Publish matching App/CLI ZIP, standalone IDE VSIX and SHA-256 files. Fully quit/reopen the host once after installation to clear listeners already running from old code. Retain the v0.8.9 tag and release.
+
+## 0.8.9 patch — 2026-10-28
+
+- Fix disposed widgets remounting after delayed preference reads, reproducing duplicate offline icons beside the live strip after an Antigravity App 2.28.0 update.
+- Guard preference completion, scheduled layout and mounting after disposal. Clean up only identifiable orphan plugin strips while preserving native controls.
+- Add four browser lifecycle regressions to the shared UI gate: delayed reads, repeated replacement, absent/returning composers and orphan recovery. Check active language/metrics, context/cache cards, usage entry and native hit targets.
+- Refresh existing v0.8.9 packages without changing the version or original tag. Reinstall the refreshed package and fully quit/reopen the host once to clear callbacks from old code; settings and statistics are retained.
+
+## 0.8.9 patch — 2026-10-27
+
+- Fix [#21](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/21): the Windows parent command launcher can retain a runtime-directory handle after Node relocates. Keep directory identities stable and atomically replace verified public files on Windows; launch Node/Python from a stable directory. Retain durable backup, crash recovery and private data, and reject linked recovery paths before any file mutation.
+- Probe Python 3.10+ before running a worker. Unusable Windows Store aliases and old interpreters can fall back to `py -3` or `python3`; an installation that has started is never retried automatically with another interpreter.
+- Preserve Windows static system proxies when the environment contains only `NO_PROXY`, retain explicit protocol overrides, and share a bounded check budget across the API and official-page fallback. Keep certificate and hostname verification enabled.
+- Show localized, predefined failure reasons for locked/unwritable files, Python, timeouts, DNS, certificates, proxies and HTTP/connection errors. Do not expose raw exception text, paths or proxy credentials.
+- Add real Node/Python subprocess regressions for the host's working directory to Verify/Release gates. Refresh the existing v0.8.9 packages and SHA-256 assets without changing the version or original Git tag. Existing v0.8.9 users and affected older updaters should install the refreshed ZIP manually once and completely reopen the App.
+
+## 0.8.9 — 2026-10-24
+
+- Address [#20](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/20): include delegated subagent Token/cache usage in the selected task's summary, with current-agent and subagent contribution rows. Selecting a child shows its own subtree; TPS, timing, steps, sampled model, context and account quotas retain their original scopes.
+- Discover descendants through structured parent/root metadata and legacy/modern `invokeSubagent` result IDs. Exclude ordinary forks and discard embedded messages, prompts and tool-result text through the streaming projection.
+- Collect children asynchronously using bounded pagination, request/conversation deduplication, account/backend/ownership checks, retry backoff and manual refresh. Resume unread children first after a bounded pass; preserve coherent known totals during incomplete responses and restarts.
+- Ingest each conversation independently into the daily/monthly ledger. Backfill unlisted descendants across batches and recheck older checkpoints once, without adding task totals as a second parent request.
+- Cover App, standalone IDE and side panel in English, Simplified Chinese and Traditional Chinese. Single-agent tasks do not initiate child RPCs. See [accounting and limits](docs/USAGE.md#delegated-tasks-boost--teamwork--subagents).
+
+## 0.8.8 — 2026-10-21
+
+- Settle malformed projected-statistics RPC failures directly before closing transport, avoiding an unresolved request when a completed request emits no further error. Add a deterministic regression and bounded fixture/test cleanup.
+- Integrate [#18](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/pull/18), with thanks to @Lorin1470: add Traditional Chinese localization across App, IDE, side panel, Token usage, onboarding, update feedback and CLI (`--language zh-TW`).
+- Provide explicit English / 简体中文 / 繁體中文 choices, retaining the context footer location and using a keyboard-accessible menu in the panel and usage window. Preserve the bilingual discovery flow, English default and existing selections.
+- Persist Traditional Chinese across fresh renderers/backends and independent guide writes. Correct missing-key/error fallback and avoid redundant guide writes during polling.
+- Keep UTC+8 accounting boundaries, recorded usage, annual heatmaps, model charts and responsive/theme behavior unchanged. Extend locale, persistence, CLI shell/width, Trusted Types, keyboard, sandbox and narrow-layout regression coverage.
+
+## 0.8.7 patch — 2026-10-15
+
+- Show measured download bytes and percentage in App updates. Use animated phase feedback for checking, verification, extraction, backup and installation; settle smoothly on completion and follow the host theme. A completed check does not animate backwards into a new download, and only the glyph rotates inside its stable icon surface.
+- Keep optional worker progress separate from the verified final result. Bound/allowlist progress events, prevent backwards byte counts and keep unavailable progress consumers from failing an installation.
+- Reuse verified disk/host checkpoints for settled histories after collector restarts, displaying saved totals while background checks run. Treat the first temporary read failure as synchronization/retry status. Repeated unresolved reads, unreadable ledgers, missing Token components and persistence failures retain coverage warnings.
+- Refresh the existing v0.8.7 App/CLI ZIP, IDE VSIX and SHA-256 assets. Version numbers remain 0.8.7; same-version updates require manual reinstall. The original Git tag/source archive is retained; the refreshed release notes identify the patch source commit.
+
+## 0.8.7 — 2026-10-15
+
+- Integrate [#17](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/pull/17): discover historical IDs independently from the App/IDE conversation and brain directories, then read usage from the authenticated local API. Host directories and ledgers remain separate; custom IDE storage does not disable discovery.
+- Repair prior partial imports using the shared paginated statistics reader, with existing memory/deadline/revision checks. Persist hashed per-account source signatures and completion/retry checkpoints, retry failed archives with backoff, retain queued manual full refreshes and yield short background batches. Installation no longer starts a separate ledger writer; previous statistics/preferences remain intact.
+- Accept official SidecarApp SDKs without the optional `close` prototype method while still checking required exports and loopback binding.
+- Eliminate long-chat usage-window open/close stalls caused by native whole-document modal inertness changes. Keep a top-layer dialog, backdrop, Escape, nested year menus, keyboard focus containment/return and composer-replacement recovery. Add a synthetic 20,000-element regression.
+- Adopt only the manual App update feature proposed in [#16](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/pull/16). Entry: context details → bottom-right **⋯ → Check for updates**. Checks run only after a click; IDE/CLI and the host application are not update targets.
+- Harden updates with exact official asset/version/path identity, required SHA-256 and download size, bounded extraction, link/duplicate-path rejection, coalesced concurrent actions, OS-backed lifecycle locking, durable backup/journals and independent interrupted-update recovery. Slow checks poll asynchronously; a narrowly scoped TLS 1.2 retry retains certificate/hostname validation.
+- Preserve the annual heatmap, current model charts and compact controls. The hourly chart, cost estimation, component filters and unrelated layout changes in #16 are not included. CLI behavior is unchanged.
+- Publish App/CLI ZIP and IDE VSIX with SHA-256 files. Windows local acceptance and synthetic/browser tests do not establish macOS/Linux signed-in GUI acceptance, future-release startup, physical power-loss or damaged-media recovery. See [usage](docs/USAGE.md) and [update boundaries](docs/UPDATES.md).
+
+## 0.8.6 — refreshed packages 2026-10-15 (initial release 2026-10-14)
+
+- Fix [#12](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/12): count readable uncached input, cache reads/writes and output independently of cache-rate eligibility. Keep conservative coverage, valid zero-input semantics, safe sums and restart recovery without deleting saved usage.
+- Simplify Token/cache cards and the inline strip: remove repeated inequality prefixes, calculation prose and coverage-count paragraphs while retaining measured values and unavailable-value dashes. Detailed limits remain in the README.
+- Simplify context cards: keep host occupancy, used/total tokens, sampled model, shared quotas/reset times and bottom language controls. Remove duplicate capacity references, unknown compaction fields and logged-text diagnostic UI. Provider references never replace the host denominator.
+- Include reviewed #13 IDE process ownership and validated SDK compatibility, #14 context semantics, and #15 bounded optional transcript collection/rewind identity. Transcript diagnostics remain numeric backend data; unsupported compaction/image event cases have synthetic coverage only.
+- Preserve the annual activity heatmap, existing model charts, responsive composer controls, statistics/preferences and CLI accounting. The withdrawn hourly drilldown and calendar selection highlight are not included.
+- Rebuild the App/CLI ZIP, IDE VSIX and matching SHA-256 files under the existing v0.8.6 release. Align its tag/source archives with the checked build snapshot. The original version number is unchanged; local-only updater/backfill work under review is excluded.
+
+## 0.8.5 — 2026-10-13
+
+- Replace whole-trajectory polling with independent offset reads for steps and generator metadata (`includeMessages: false`), using summaries, cached immutable prefixes and revalidated mutable tails. Incrementally validate/project returned JSON without retaining prompts, attachments or tool output. Preserve tool-only classification rather than substituting reduced verbosity that loses tool-call markers.
+- Remove the provisional 512 MiB whole-response cap for statistical streams. Use an 8 MiB projected-statistics/cache budget, bounded parsing and timeouts; ordinary/error responses remain separately bounded. Local synthetic 0/40/640 MiB and 1K/8K/16K/32K-record experiments underpin the budget and document its limits in [long-conversation collection](docs/LONG_CONVERSATIONS.md).
+- Preserve offsets, request deduplication, usage identities and rate/cache/context values; invalidate caches on rewinds, settled edits, account/endpoint changes and manual refresh. Periodically recheck idle tails; failed pages cannot replace complete cached revisions. Real Windows metadata/usage parity and synthetic large-page regressions pass; the reporting user's exact conversation remains untested.
+
+## 0.8.4 — 2026-10-13
+
+- Redesign the App side panel as a persistent dashboard: three metric cards also select detail tabs, compact quota summaries stay visible, the default speed details remain open, and long details scroll within a fixed frame. Pointer departure no longer hides selected information; arrow/Home/End keyboard selection is supported. Shared metrics, preference storage and theme adaptation are retained.
+- Version panel scripts and styles together from a content hash and serve uncached resources; align the hosted iframe background with its derived theme despite the SDK's inline body background. Prevent mixing new HTML with cached older code/styles during plugin updates.
+
+- Address [#11](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/11): serve the sidecar panel as a self-contained classic script instead of loading ESM dependencies from plugin://. Defer the entry script, wait for DOM readiness, guard missing widgets and prevent duplicate initialization. Both the SDK and standalone preview use the same bundle generator.
+- Add one asynchronous, hidden and time-bounded PID-filtered Get-NetTCPConnection fallback when Windows netstat has no listener for a candidate or fails. Recognize localized listening states and try the Windows .gemini log location as a fallback, retaining process/port ownership validation and explicit log overrides.
+- Add Chromium checks for ordinary and early classic-script loading, opaque sandboxed iframe execution, metrics/cache/context/quota display, language/manual refresh, automatic recovery and duplicate scripts. Windows signed-in plugin:// verification reproduces the old uninitialized module panel and confirms the restarted classic/deferred panel, matching inline metrics, language switching and manual refresh. The reporting user's machine remains a separate acceptance scope.
+
+## 0.8.3 — 2026-10-12
+
+- Separate App RPC/application failures from endpoint loss. Missing historical trajectories, HTTP 4xx/5xx other than credential failures, and malformed responses no longer trigger process discovery. Coalesce concurrent discovery and back off failed cold starts from 3 seconds to a maximum of 30 seconds; transport/credential failures still recover automatically with bounded scans.
+- Restore the data binding subscription after Runtime domain resynchronization and release abandoned bridge requests without disabling the widget. The v0.8.2 candidate was blocked by CI before package publication; the completed fix ships in v0.8.3.
+- Track top-frame navigation and default execution contexts, including reversed event ordering. If hooks exist without a trusted main context, resynchronize Runtime events on the same socket. Navigation exceptions remove the failed session's preload before reconnecting. Keep remote/iframe contexts excluded.
+- Add local HTTP regressions for history errors, cold-start/auth cooldown and backend restarts, plus real Chromium/CDP delayed-composer and interrupted-navigation coverage. The reporting user's exact environment and failure remain unverified; these tests do not establish the cause of every cold-start failure.
+
+- Isolate pending-hover cancellation from fresh pointer entry in the composer-remount browser regression; retain the cold-hover and auto-dismiss assertions.
+
+## 0.8.1 — 2026-10-12
+
+- Address [#9](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/9) in the App runtime adapter: retain the widget during send/stop/cancel transitions, discover static Teamwork badges without title/span assumptions, and scope visible editors/model controls to their nearest composer owner. Ignore hidden/inert and deeper nested editors; reject ambiguous anchors.
+- Recreate the usage controller after a closed-dialog composer teardown, rather than reattaching a strip whose dialog was already disposed. Invalidate pending requests from that mount. Context language choices update usage-entry labels immediately and keep the usage dialog localized. Desktop/IDE browser regressions cover temporary missing composers; English/Chinese Teamwork fixtures cover main/subagent return navigation and clickable localized usage windows after remount.
+- Follow the active composer's nearest `data-cascade-id` when nested navigation leaves the route unchanged. Invalid explicit IDs clear conversation statistics rather than inheriting the parent route; late responses remain isolated. Add English/Chinese production-browser regressions for six nesting levels, working controls, DOM-only navigation and ambiguity. Windows signed-in three-level delegation checks cover independent metrics, return navigation and a generating-state screenshot. That host changes the route and renders one composer, so six-level DOM and unchanged-route coverage remain browser fixtures. User acceptance and Linux/macOS GUI checks remain open.
+- Prioritize current-request cache-read percentage in the CLI status line, with read tokens as secondary text. Narrow terminals retain context/cache percentages before bars, read counts and state. Keep unknown counter semantics unavailable and expose the reason in allowlisted JSON.
+- Calculate percentages only for empirically tested CLI/model counter scopes with zero cache writes; explicitly zero reads with valid nonempty input show 0%. Do not use output, cumulative totals, another request's percentage or desktop history.
+- Enable nonzero Gemini 3.8 Flash (High) cache percentages on CLI 1.3.3 after diagnosing a real current-request snapshot with reads greater than input. Earlier previews omitted this model even when reads were available; short artificial Gemini tests returning zero do not establish nonzero-cache support by themselves.
+- Do not report busy zero-cache snapshots as completed 0% hits. Thinking/working/tool/initializing with zero reads display `Cache --` without `0 read`; available nonzero reads remain usable while busy, and idle valid zero reads still show 0%. No percentage is borrowed from previous requests. Windows and Linux CLI regressions cover both languages and separate status-line processes.
+
+## 0.8.0 — 2026-10-11
+
+- Make English/Chinese agent installation prompts detect the host and require target confirmation before downloads/configuration changes. Distinguish App, CLI and standalone IDE; the shared ZIP does not mean the App installer should run for CLI users.
+- Add local Token usage to the desktop App and standalone IDE: daily/weekly contribution grids, day/week/month model stacks, model filtering, full-count tooltips/tables, and a compact two-column Today / This month cache-card entry. Theme-driven model colors follow custom accent/background changes.
+- Keep the usage frame stable across month changes, empty data, missing snapshots, account switches and composer replacement. Use a themed year menu and aligned controls; manual refresh queues behind polling and completes a visible rotation.
+- Explain local history import, UTC+8 date boundaries, coverage/billing limits and storage on first opening. Persist acknowledgment independently of language; save failures stay visible and retryable. Local replay controls are excluded from packaged collectors.
+- Address [#8](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/8): pair response tokens with their own stream durations, quarantine inconsistent token/retry/duplicate scopes and suspicious brief tool-only windows, and use a same-model median/MAD baseline for short outliers. Do not cap sustained high throughput or invent generation time. Token/cache/context counts remain available.
+- Recalculate legacy saved TPS from complete trajectories, retaining other statistics and protecting full coverage from partial backend responses. An unreliable latest request stays unavailable rather than borrowing an older rate.
+- Fix hover cards staying open after closing usage: pointer-restored focus no longer reopens or pins a card; keyboard focus and Escape return remain supported. Desktop/IDE regressions cover the full return-and-hover flow.
+- Retain usage in a separate account-scoped `usage-v1` ledger, deduplicated by hashed request identity. No prompts, replies or credentials are stored. Available local history is backfilled; deleting chats does not erase already recorded consumption. Desktop and IDE ledgers stay separate; CLI behavior is unchanged.
+- Refresh English/Chinese illustrations from the current production renderer and add activity/model-chart previews. Add usage-window/onboarding coverage to the Windows/Linux/macOS CI and release gates. Signed-in Linux/macOS GUI acceptance remains outstanding.
+
+## 0.7.0 — 2026-10-11
+
+- Add a dedicated VSIX adapter for Google's standalone Antigravity IDE. Keep host-specific DOM/conversation discovery separate from the shared renderer; narrow panes show three icons, wide panes expose values, and native controls retain their space.
+- Bind each input to its actual conversation and the IDE main language server, excluding desktop/autocomplete/other-profile sources. New or unrecognized conversations do not inherit another chat's samples.
+- Prefer response/message IDs when deduplicating model requests; execution IDs shared by tool follow-ups no longer collapse valid requests or lose cache reads.
+- Build fixed templates with DOM operations under existing Trusted Types policies. Avoid unchanged label/style/ARIA writes and max-height measurement oscillation so polling preserves card scroll, focus and open menus.
+- Retain theme, language, first-use guide and per-account/conversation aggregate history. Gate extension activation and install helpers to Antigravity IDE; use only fresh health records.
+- Add dependency-free VSIX packaging, SHA256 validation and an optional host-bundled-runtime install/launch/uninstall helper. Publish ZIP and IDE VSIX independently with checksums, after three-platform automated gates.
+- Include merged PR #7 by @qwqZYLqwq: 250ms cold hover, immediate warm transitions, 120ms leave grace, 350ms warm window, guarded delayed callbacks and 16 browser regressions with deterministic macOS startup timing.
+- Windows IDE 2.5.5 has real local acceptance. Linux/macOS IDE GUI acceptance remains open; other editor extensions and named/custom IDE profiles remain unsupported. Existing desktop screenshots are explicitly identified as desktop examples.
+
+## 0.6.4 — 2026-10-10
+
+- Address [#6](https://github.com/YOU-SHOULD-KNOW-ME/antigrative-dashboard/issues/6): remove the duplicate toolbar language button; retain explicit English / 简体中文 choices at the bottom of context details. Add a compact bilingual first-use tip beside the context chip so users can find the setting despite the English default. Opening the tip locates and focuses the language choices without stealing focus on initial display.
+- Persist guide completion independently of the renderer origin. Closing the tip keeps the current language; successfully choosing either language completes onboarding. Failed saves remain visible and retryable. Show the guide in the main composer only; existing saved language choices are retained.
+- Protect native subagent labels and SVG sizes when the sidebar narrows the composer. Reserve their natural width, switch to three icons earlier, release all plugin flex space if the icons cannot fit, and restore full statistics when space returns. Avoid repeated full-layout probes and no-op class mutations during continuous dragging.
+- Add first-use, dismissal, explicit language choice, save-failure retry, fresh-origin/backend persistence and native-label/icon geometry regressions.
+- Refresh English/Chinese README and release artwork from the v0.6.4 widget, without the duplicate toolbar language button: full and icon layouts, separate subagent statistics, speed/cache details and combined context/quotas with language choices at the bottom. Use one color theme and compact two-column details; read the version from the manifest when regenerating images.
+- Allow up to 30 seconds for the CLI shell-transport test on Windows CI, where cold CMD/PowerShell/Node startup exceeded the previous 10-second limit. Keep the exit-code and exact rendered-output assertions, with no automatic test retry. Desktop and CLI runtime behavior is unchanged.
+
+## 0.6.3 — 2026-10-10
+
+- Fix a small position jump when reversing a density transition: capture the currently painted copies before the flex layout changes, and retain source metadata for outgoing labels.
+- Make intermediate-frame and reversal assertions deterministic using exact WAAPI times. Tighten reversal continuity to under 1px; keep continuous dragging, rapid switching and cleanup tests on real time.
+- Includes the responsive motion and resize performance improvements below. v0.6.2 publication was blocked by the macOS motion gate; its existing tag is retained unchanged.
+
+## 0.6.2 — 2026-10-10 (not published)
+
+- Animate responsive full-statistics / three-icon changes with a 240ms interruptible transition: fade outgoing values, move the existing icon shapes and ease the native model name back into view. Keep icon hit targets active throughout.
+- Clip inert motion copies away from native composer actions; immediately cancel on unsafe placement, navigation, reparenting or disposal. Preserve host layout styles and avoid replaying motion on metric polls or scrolling alone.
+- Add production-renderer browser coverage for in-flight geometry, rapid reversal, outgoing-label cleanup, native hit targets and system reduced-motion feedback. Run `npm run preview:motion` for an interactive local demonstration.
+- Fix resize-drag stutter and trailing motion copies: keep one animation clock per density change, clip the existing ribbon as the composer moves, capture visual pieces only for actual transitions, and avoid probing full layout repeatedly while shrinking. Use 12px of recovery headroom to prevent density chatter; retain the complete default transition.
+
+## 0.6.1 — 2026-10-10
+
+- Refresh immediately on parent/subagent navigation instead of inheriting the old polling clock or waiting for its in-flight request. Guard success, failure and cleanup by navigation generation, and avoid listing every conversation when an exact ID is supplied. Preserve queued manual refresh feedback.
+- Add a subagent strip inside the host's stable input box, beside its static identity badge. Display current child throughput, cache and context; label detail cards as current subagent statistics and quotas as account-wide balances.
+- Reduce narrow composers to three interactive icons (speed, cache and context), hiding only when those icons cannot fit safely. Keep language switching in the context card and restore full statistics when space returns.
+- Fix controls disappearing during message scrolling: clipped or covered message controls are not visible collisions. Continue reserving local composer actions and protecting actually painted floating controls.
+- Clear statistics immediately on parent/child navigation and reject late or mismatched conversation responses. Add English/Chinese browser coverage for child request ownership, late responses, quota scope and narrow layouts.
+- Fix inline dashboard overlap with Agent Manager / Subagent window controls (issue #5). Require a horizontal action row adjacent to its editable composer; reject app headers, distant toolbars and unsupported layouts.
+- Use bounded, shrinking inline sizing without changing the host model branch or raising the strip above neighboring buttons. Clip overflowing chips, compact when space is limited and hide the strip if it still cannot fit or intersects host controls.
+- Recheck geometry after resize, scroll, host layout mutations and composer replacement; close open cards when placement becomes unsafe and restore the strip when space returns. Keep detail cards in the browser top layer.
+- Add browser regressions for header rejection, English/Chinese widths, real control clicks, absolute-position collisions, recovery and preservation of host styles. This shared renderer fix applies to all desktop platforms; signed-in Linux/macOS GUI acceptance remains separate.
+
+## 0.6.0 — 2026-10-10
+
+- Add a standalone Antigravity CLI statusLine adapter: explicit context occupancy, current cache read tokens, agent state, grouped Gemini/Claude-GPT quotas and reset countdowns.
+- Prioritize key values with foreground colors and bold text; show quota numbers and bars in green at ≥70% remaining, yellow at ≥30% and <70%, red below 30%, with a textual low-balance alert.
+- Give the shared quota label distinct Claude (#DA7756) and GPT (#F8FAFC) foreground colors; use the default foreground for GPT when a light-background terminal hint is supplied.
+- Support English/Chinese, CJK/emoji-aware terminal widths, narrow layouts, optional details and monochrome terminals without forcing the terminal background.
+- Add independent install-cli/status-cli/uninstall-cli commands, atomic settings updates, recovery of the prior status line, safe reinstall and user-directory runtime storage that survives CLI binary replacement.
+- Fix Windows agy Go/CMD quote transport using a literal-path UTF-8 PowerShell encoded invocation; retain POSIX shell quoting for Linux/macOS.
+- Keep Unicode installation paths from failing after a successful install on redirected Windows consoles using legacy encodings.
+- Include CLI modules in the portable release package and regression suites for payload validation, color thresholds, widths, language persistence, shell transport and lifecycle restoration.
+- Add a real Windows CLI 1.3.2 two-turn conversation screenshot. Signed-in Linux/macOS interactive acceptance remains outstanding.
+- Omit CLI tok/s and cache hit ratios because the documented input does not establish streaming duration or the needed cache denominator; missing values remain explicit and no transcripts or new metric history are read or stored.
+
+## 0.5.2 — 2026-10-09
+
+- Follow the host's custom background, card and foreground colors for chips, hover cards and quota menus; derive matching controls and tracks with readable text, and restore fallback colors when host tokens disappear.
+- Locate localized composers through editable WAI-ARIA roles, stable model identifiers and the nearest DOM containment boundary, independent of send/record/cancel text (issue #4).
+- Scope the model label to the selected composer; reject hidden or ambiguous candidates and reattach safely after composer replacement or reparenting.
+- Follow the active Antigravity primary color for context rings and context/quota bars; use whitelisted custom dark/light theme seeds as a live configuration fallback (issue #3).
+- Keep small emphasized text and refresh feedback readable under custom colors, and restore the default palette when a custom color is removed or invalid.
+- Show manual refresh progress with a spinning icon and localized busy state; coalesce repeated clicks, honor reduced motion and queue a forced refresh behind background polling.
+- Keep the selected quota group only in the hover card; remove the extra toolbar label when manually switching away from the current model's quota group.
+- Keep quota-group clicks inside the widget so the host composer cannot steal focus and close the card; preserve menu selection, keyboard activation and outside-click dismissal.
+- Correct macOS language-server logs to `~/Library/Logs/Antigravity/language_server.log`, retain a profile-path fallback and support an explicit `AG_PULSE_LOG` override (issue #1).
+- Filter Windows standalone processes before one native `netstat` snapshot; match listening IPv4/IPv6 sockets to exact PIDs without per-process CIM port queries (issue #2).
+- Serialize sidecar ownership claims and retire superseded processes; isolate instance bindings, ignore late responses/injections and keep old shutdown from disposing a newer widget (issue #2).
+- Promote inline hover cards to the browser top layer so host jump-to-bottom controls cannot cover details inside composer stacking contexts.
+- Save the English/Chinese preference in an atomic, app-independent user configuration file; changing host ports, reloading or restarting no longer loses it.
+- Share the preference between the inline widget and side panel, migrate existing browser choices once and protect newer selections from stale startup/polling responses.
+- Report failed language writes instead of silently treating browser-only storage as a successful save.
+- Gate publication on Windows, Linux and macOS data/lifecycle tests, Chromium theme/localization/preference regressions and official Linux/macOS desktop resource/SDK checks. Browser fixtures do not replace signed-in host GUI acceptance.
+
+## 0.5.1
+
+- Follow the Antigravity light/dark theme for toolbar chips, all hover cards, quota menus and warning states; fall back to the OS in standalone previews.
+- Share one palette and theme controller between the injected widget and native SDK panel; react to host classes, background tokens and live theme changes without resetting statistics.
+
+- Crop README screenshots around the controls and cards; show a single color theme to avoid repeated artwork.
+
+## 0.5.0
+
+- Consolidate context, five-hour and weekly quotas into one hover card; keep only TPS, cache and context chips in the toolbar on every platform.
+- Isolate the current renderer protocol from older sidecars that survive an app update, preventing stale context schemas from replacing valid occupancy readings.
+- Add a Codex-style context occupancy ring and hover card to inline and sidecar views, with used/remaining percentages and used tokens versus capacity.
+- Read the host's latest request-start context estimate; never infer model capacity or equate cumulative input with context. Unknown/over-capacity data stays explicit.
+- Persist only whitelisted numeric context snapshots per conversation and account; allow occupancy to shrink after compaction and clear values when switching chats.
+- Add native Windows/Linux/macOS profile and settings paths, PID-owned port discovery, SDK lookup, custom installation overrides and POSIX install/uninstall scripts.
+- Run lifecycle and metric tests on all three OS runners, plus Linux/macOS official desktop resource/embedded-SDK checks. Release publication requires those checks.
+- Preserve the plugin-owned reconnecting adapter and app.asar integrity protections. Linux/macOS signed-in GUI verification still requires a real user session.
+
+## 0.4.0
+
+- Replace default app.asar patches with plugin-owned runtime attachment; reconnect after app updates and renderer startup document replacement.
+- Rediscover backend credentials and validate that the selected HTTP port belongs to the current standalone process.
+- Persist numeric TPS/cache statistics per account and conversation with atomic writes, account isolation, and protection against empty/regressing metadata.
+- Restore saved statistics with a timestamp when historical RPC data is unavailable; preserve real zero cache hits.
+- Keep conversation collection working when quota/list endpoints fail; report storage failures without discarding live metrics.
+- Replace old renderer hooks after plugin code updates and expose integration health in status/panel APIs.
+- Add history backfill/restart verification and a documented robustness matrix.
+- Default migration/uninstall never overwrites unverified application changes. Legacy loader remains explicit opt-in.
+
+## 0.3.0
+
+- Add a DSH-style Token usage card: total tokens, cache hit rate, uncached input, cache reads, output, and optional cache writes.
+- Show compact token totals and cache hit rate next to TPS.
+- Calculate cache hits from the local Antigravity normalized counters: cached reads divided by uncached input plus cache reads and writes.
+- Make English the default UI language; add persistent English / Simplified Chinese switching for inline and sidecar views.
+- Translate quota cards, timers, accessibility labels, and backend error states.
+- Add cache counter and language-switch regression tests.
+
+## 0.2.0
+
+- Package Antigrative Dashboard as a standalone MIT-licensed project.
+- Add install, enable, disable, status, uninstall and release packaging commands.
+- Restore the original application on uninstall using verified archive backups.
+- Keep the compact widget beside the model selector and hide unused TPS in new chats.
+- Keep quota menus open across polling cycles.
+- Show actual Antigravity session throughput and independent model-group quotas.
+- Validate support for Windows Antigravity desktop 2.19.1 only.
+
+## 0.1.0
+
+- Initial local collector, sidecar panel, and inline toolbar adapter.

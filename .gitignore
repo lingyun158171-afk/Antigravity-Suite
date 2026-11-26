@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Official Antigravity backups (never commit proprietary app.asar files)
+backups/*.bak
+backups/*.asar
+backups/*.tmp
+!backups/.gitkeep
+
+# Auto-fetched upstream localization module (fetched on demand to respect upstream license)
+mods/localization/
+mods/*.old/
+
+# User personal wallpapers & local config
+wallpapers/*
+!wallpapers/README_壁纸放入这里.txt
+
+# Generated local Windows shortcuts & logs
+*.lnk
+*.log
+.DS_Store
+Thumbs.db

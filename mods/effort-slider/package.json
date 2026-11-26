@@ -1,0 +1,28 @@
+{
+  "name": "antigravity-codex-effort-slider",
+  "version": "1.2.7",
+  "description": "Codex 风格推理等级滑条（适配 Google Antigravity）—— 底部专属推理等级滑条、跨档位边界即时切换、22 星尘粒子与深紫星云特效、支持 app.asar 持久安装与 CDP 免重启热注入",
+  "main": "./lib/client.js",
+  "scripts": {
+    "test": "node test/client.test.mjs",
+    "preview": "node preview/make-preview.mjs",
+    "build:demo": "node preview/make-preview.mjs",
+    "render-video": "python video/generate-audio.py && node video/build-stage.mjs && python video/render.py",
+    "inject": "node tools/inject-cdp.cjs",
+    "eject": "node tools/inject-cdp.cjs --uninstall"
+  },
+  "keywords": [
+    "antigravity",
+    "codex",
+    "reasoning-effort",
+    "effort-slider",
+    "electron",
+    "cdp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LLYSH-HANNARI/antigravity-Codex-Claude-effort-slider.git"
+  },
+  "homepage": "https://llysh-hannari.github.io/antigravity-Codex-Claude-effort-slider/",
+  "license": "MIT"
+}
